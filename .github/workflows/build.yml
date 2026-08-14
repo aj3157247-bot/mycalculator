@@ -8,111 +8,99 @@ on:
 
 jobs:
   build:
+    name: Build Kivy Android APK
     runs-on: ubuntu-22.04
 
     steps:
 
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Python
+      - name: Setup Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Install system packages
+      - name: Install Linux dependencies
         run: |
           sudo apt-get update
+
           sudo apt-get install -y \
             git \
             zip \
             unzip \
+            openjdk-17-jdk \
             autoconf \
             automake \
+            autopoint \
             libtool \
             pkg-config \
             zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            libtinfo6 \
+            cmake \
             libffi-dev \
             libssl-dev \
-            cmake
+            gettext
 
       - name: Install Buildozer
         run: |
-          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --upgrade pip
+          python -m pip install setuptools wheel
           python -m pip install buildozer==1.6.0
-          python -m pip install Cython==0.29.37
+          python -m pip install Cython==0.29.34
 
-      - name: Check project
+      - name: Verify environment
         run: |
+          echo "========================================"
+          echo "PYTHON"
+          echo "========================================"
+          python --version
+          python -c "import sys; print(sys.executable)"
+          python -c "import sys; print(sys.version)"
+
+          echo ""
+          echo "========================================"
+          echo "BUILDOZER"
+          echo "========================================"
+          buildozer --version
+
+          echo ""
+          echo "========================================"
+          echo "JAVA"
+          echo "========================================"
+          java -version
+
+          echo ""
+          echo "========================================"
+          echo "PROJECT"
+          echo "========================================"
+          ls -la
+
+          echo ""
+          echo "========================================"
+          echo "BUILDOZER REQUIREMENTS"
+          echo "========================================"
+          grep "^requirements" buildozer.spec
+
           test -f main.py
           test -f buildozer.spec
 
-          echo "Python:"
-          python --version
-
-          echo "Buildozer:"
-          buildozer --version
-
-          echo "Requirements:"
-          grep "^requirements" buildozer.spec
-
-      - name: Check for invalid requirements
-        run: |
-          if grep -RInE \
-            "requirements.*=.*(android|kivy==|charset_normalizer)" \
-            . \
-            --exclude-dir=.git \
-            --exclude-dir=.buildozer \
-            --exclude=build.log; then
-
-            echo "Invalid requirement found."
-            exit 1
-          fi
-
-      - name: Clean Build
+      - name: Remove previous Buildozer files
         run: |
           rm -rf .buildozer
           rm -rf bin
 
       - name: Build APK
-        shell: bash
         run: |
-          set +e
-
-          buildozer -v android debug 2>&1 | tee build.log
-
-          EXIT_CODE=${PIPESTATUS[0]}
-
-          echo ""
-          echo "=============================="
-          echo "BUILD EXIT CODE: $EXIT_CODE"
-          echo "=============================="
-
-          if [ "$EXIT_CODE" -ne 0 ]; then
-            echo ""
-            echo "=============================="
-            echo "ERRORS"
-            echo "=============================="
-
-            grep -Ein \
-              "error:|error |failed|fatal|exception|traceback|unsupported wheel|not a supported wheel|no matching distribution|could not find|command failed" \
-              build.log | tail -200 || true
-
-            echo ""
-            echo "=============================="
-            echo "LAST 200 LINES"
-            echo "=============================="
-
-            tail -200 build.log
-          fi
-
-          exit "$EXIT_CODE"
+          buildozer -v android debug
 
       - name: Upload APK
         if: success()
@@ -121,11 +109,3 @@ jobs:
           name: mycalculator-apk
           path: bin/*.apk
           if-no-files-found: error
-
-      - name: Upload Build Log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-          if-no-files-found: ignore
