@@ -74,7 +74,7 @@ jobs:
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
           which aidl
-          aidl --version
+          aidl --help
 
       - name: Install Buildozer
         run: |
