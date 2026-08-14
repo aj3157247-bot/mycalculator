@@ -8,20 +8,17 @@ on:
 
 jobs:
   build:
-    name: Build Calculator APK
+    name: Build My Calculator
     runs-on: ubuntu-22.04
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
-
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-
 
       - name: Setup Java
         uses: actions/setup-java@v4
@@ -29,73 +26,55 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-
       - name: Install system dependencies
         run: |
           sudo apt-get update
-
           sudo apt-get install -y \
             git \
             zip \
             unzip \
-            openjdk-17-jdk \
-            python3-pip \
             autoconf \
             automake \
             libtool \
             pkg-config \
             zlib1g-dev \
-            libncurses5-dev \
-            libncursesw5-dev \
-            libtinfo5 \
-            cmake \
             libffi-dev \
-            libssl-dev
-
+            libssl-dev \
+            cmake
 
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
           python -m pip install setuptools wheel
           python -m pip install buildozer==1.6.0
-          python -m pip install Cython==0.29.37
-
+          python -m pip install cython==0.29.34
 
       - name: Check project
         run: |
-          echo "========== PYTHON =========="
+          echo "Python:"
           python --version
 
-          echo "========== BUILDOZER =========="
+          echo "Buildozer:"
           buildozer --version
 
-          echo "========== JAVA =========="
+          echo "Java:"
           java -version
 
-          echo "========== PROJECT =========="
+          echo "Files:"
           ls -la
 
-          echo "========== BUILDOZER SPEC =========="
-          cat buildozer.spec
-
-          echo "========== MAIN.PY =========="
           test -f main.py
-
+          test -f buildozer.spec
 
       - name: Clean previous build
         run: |
           rm -rf .buildozer
           rm -rf bin
 
-
       - name: Build APK
         shell: bash
         run: |
           set +e
-
-          echo "======================================"
-          echo "        STARTING APK BUILD"
-          echo "======================================"
 
           buildozer -v android debug 2>&1 | tee build.log
 
@@ -103,38 +82,24 @@ jobs:
 
           echo ""
           echo "======================================"
-          echo "        BUILD EXIT CODE"
+          echo "BUILD EXIT CODE: $EXIT_CODE"
           echo "======================================"
 
-          echo "$EXIT_CODE"
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo ""
+            echo "========== ERROR SUMMARY =========="
 
-          echo ""
-          echo "======================================"
-          echo "        ERROR SUMMARY"
-          echo "======================================"
+            grep -Ein \
+              "error:|error |failed|fatal|exception|traceback|undefined reference|no such file|not found|cannot|unable|command failed" \
+              build.log | tail -200 || true
 
-          grep -Ein \
-            "error:|error |failed|fatal|exception|traceback|undefined reference|no such file|not found|cannot|unable|command failed" \
-            build.log | tail -200 || true
+            echo ""
+            echo "========== LAST 200 LINES =========="
 
-          echo ""
-          echo "======================================"
-          echo "        LAST 200 LINES"
-          echo "======================================"
-
-          tail -200 build.log
+            tail -200 build.log
+          fi
 
           exit "$EXIT_CODE"
-
-
-      - name: Upload build log
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-log
-          path: build.log
-          if-no-files-found: ignore
-
 
       - name: Upload APK
         if: success()
@@ -143,3 +108,11 @@ jobs:
           name: mycalculator-apk
           path: bin/*.apk
           if-no-files-found: error
+
+      - name: Upload build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          if-no-files-found: ignore
