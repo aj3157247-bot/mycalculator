@@ -14,7 +14,7 @@ source.exclude_dirs = .buildozer,bin,.git
 
 version = 1.0.0
 
-requirements = python3==3.11.9,kivy
+requirements = python,kivy
 
 orientation = portrait
 
