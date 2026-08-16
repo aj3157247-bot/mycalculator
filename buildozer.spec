@@ -1,42 +1,30 @@
 [app]
 
-title = My Calculator
-
-package.name = mycalculator
-
-package.domain = org.mycalculator
+title = DateTimeApp
+package.name = datetimeapp
+package.domain = org.jafari
 
 source.dir = .
+source.include_exts = py,png,jpg,kv,atlas
 
-source.include_exts = py,kv,png,jpg,jpeg,atlas
+version = 1.0
 
-source.exclude_dirs = .buildozer,bin,.git
-
-version = 1.0.0
-
-requirements = python,kivy
+requirements = python3,kivy
 
 orientation = portrait
 
 fullscreen = 0
 
-android.api = 34
+android.archs = arm64-v8a
 
 android.minapi = 24
 
-android.archs = arm64-v8a
-
-android.ndk_api = 24
-
 android.accept_sdk_license = True
 
-android.permissions =
-
-log_level = 2
+android.debug_artifact = apk
 
 
 [buildozer]
 
 log_level = 2
-
-warn_on_root = 0
+warn_on_root = 1
